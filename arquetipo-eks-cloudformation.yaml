@@ -1,0 +1,1008 @@
+  
+AWSTemplateFormatVersion: '2010-09-09'
+Description: AWS EKS Cluster (Kubernetes)
+  #============================================================================#
+  # Parameters & Tags
+  #============================================================================# 
+Parameters:
+   VPC:
+    #Type: 'AWS::EC2::VPC::Id'
+    Type: String
+    Description: 'Escoger VPC a utilizar por el cluster de EKS'
+    Default: vpc-0a0a65a47ff6b9c07
+   PublicSubnet1:
+    #Type: 'AWS::EC2::Subnet::Id'
+    Type: String
+    Description: 'Seleccionar Public AZ-A'
+    Default: subnet-08b95ed0472dc4176
+   PublicSubnet2:
+    #Type: 'AWS::EC2::Subnet::Id'
+    Type: String
+    Description: 'Seleccionar Public AZ-B'
+    Default: subnet-035b1c073be3cfd88
+   PublicSubnet3:
+    #Type: 'AWS::EC2::Subnet::Id'
+    Type: String
+    Description: 'Seleccionar Public AZ-C'
+    Default: subnet-018549aa1c50af0d6   
+   ComputeSubnet1:
+    #Type: 'AWS::EC2::Subnet::Id'
+    Type: String
+    Description: 'Seleccionar ComputeSubnet1/PrivateSubnet AZ-A'
+    Default: subnet-08c2a4c8305c159c9
+   ComputeSubnet2:
+    #Type: 'AWS::EC2::Subnet::Id'
+    Type: String
+    Description: 'Seleccionar ComputeSubnet2/PrivateSubnet AZ-B'
+    Default: subnet-026713a3dbb677c19
+   ComputeSubnet3:
+    #Type: 'AWS::EC2::Subnet::Id'
+    Type: String
+    Description: 'Seleccionar ComputeSubnet3/PrivateSubnet AZ-C'
+    Default: subnet-00cb2a8efaf8d2da5
+   InternalSubnet1:
+    #Type: 'AWS::EC2::Subnet::Id'
+    Type: String
+    Description: 'Seleccionar InternalSubnet1 AZ-A'
+    Default: subnet-03e7d7e3eb0a4dbfc
+   InternalSubnet2:
+    #Type: 'AWS::EC2::Subnet::Id'
+    Type: String
+    Description: 'Seleccionar InternalSubnet2 AZ-B'
+    Default: subnet-0f07850eae6204436
+   InternalSubnet3:
+    #Type: 'AWS::EC2::Subnet::Id'
+    Type: String
+    Description: 'Seleccionar InternalSubnet3 AZ-C'
+    Default: subnet-0a361f8a36687d1d2
+   PublicDomain:
+    Type: String
+    Default: infra-sbx.noprodcomafi.ar
+    Description: AWS Public Domain       
+   PublicCertificateARN:
+    Type: String
+    Default: arn:aws:acm:us-east-1:<AWS_ACCOUNT_ID>:certificate/36157dc4-2b34-4083-91ff-2f5fb4008e11
+    Description: AWS ACM Public Certificate
+   PrivateDomain:
+    Type: String
+    Default: infra-sbx.noprodcomafi.aws
+    Description: AWS Private Domain      
+   PrivateCertificateARN:
+    Type: String
+    Default: arn:aws:acm:us-east-1:<AWS_ACCOUNT_ID>:certificate/10fe5f74-cc8a-4a2f-9e5e-1b75b760b6ae
+    Description: AWS ACM Prvate Certificate       
+   EKSClusterName:
+    Type: String
+    Description: Nombre del cluster EKS
+    Default: cluster-eks-
+   NumWorkerNodes:
+    Type: Number
+    Description: Numero de Workers deseado
+    Default: 3
+   NodeInstanceType:
+    Type: String
+    Description: Tipo de instancia de los Workers
+    Default: t3a.large
+   EKSVersion:
+    Type: String
+    Description: AWS EKS version 1.33 latest version
+    Default: "1.33"
+   DiskSize:
+    Type: String
+    Description: Tamaño de disco de los Workers
+    Default: 100
+   WorkersAmiType: 
+    Type: String
+    Description: Tipo de AMI para los Workers - ejemplo #AmiType: AL2_x86_64 #BOTTLEROCKET_x86_64
+    Default: BOTTLEROCKET_x86_64  
+   BastionAmiId:
+    Type: String
+    Default: ami-044fbfcc6d0c580a6
+    Description: AMI Comafi Amazon Linux3 ami-044fbfcc6d0c580a6 / AMI de AWS ami-0f88e80871fd81e91
+   pTagValueApps:
+    Type: String
+    Description: Este es el valor de tag para 'workload:apps'
+    Default: cluster-eks-
+   pTagValueTechOwner:
+    Type: String
+    Description: Este es el valor de tag para 'workload:tech-owner'
+    AllowedPattern: ([a-zA-Z0-9_\-\.\+]+)@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.)|(([a-zA-Z0-9\-]+\.)+))([a-zA-Z]{2,4}|[0-9]{1,3})(\]?)
+    ConstraintDescription: Debe ser una direccion de correo valida
+    Default: aws-operaciones@comafi.com.ar
+   pTagValueEnvironment:
+    Type: String
+    Description: Este es el valor de tag para 'workload:environment'
+    AllowedValues:
+    - dev
+    - qa
+    - prod
+    - sandbox
+    Default: sandbox
+   pTagValueCostCenter:
+    Type: Number
+    Description: Este es el valor de tag para 'workload:cost-center'.
+    Default: '179'
+   pTagValueBussOwner:
+    Type: String
+    Description: Este es el valor de tag para 'workload:buss-owner'
+    AllowedPattern: ([a-zA-Z0-9_\-\.\+]+)@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.)|(([a-zA-Z0-9\-]+\.)+))([a-zA-Z]{2,4}|[0-9]{1,3})(\]?)
+    ConstraintDescription: Dee ser una direccion de correo valida
+    Default: aws-operaciones@comafi.com.ar
+   pTagValueMaintenanceWindow:
+    Type: String
+    Description: Este es el valor de tag para 'workload:maintenance-window'
+    Default: l-v-23:00-03:00
+   pTagValueProject:
+    Type: String
+    Description: Este es el valor de tag para 'workload:project'
+    Default: cluster-eks-
+   pTagValueBackupDaily:
+    Type: String
+    Description: Este es el valor de tag para 'automation:aws-backup-daily'
+    AllowedValues:
+    - 'yes'
+    - 'no'
+    Default: 'no'
+   pTagValueBackupWeekly:
+    Type: String
+    Description: Este es el valor de tag para 'automation:aws-backup-weekly'
+    AllowedValues:
+    - 'yes'
+    - 'no'
+    Default: 'yes'
+   pTagValueBackupMonthly:
+    Type: String
+    Description: Este es el valor de tag para 'automation:aws-backup-monthly'
+    AllowedValues:
+    - 'yes'
+    - 'no'
+    Default: 'no'
+   pTagValueSchedule:
+    Type: String
+    Description: Este es el valor de tag para 'automation:schedule'
+    Default: 'no'
+   pTagValueAvailability:
+    Type: String
+    Description: Este es el valor de tag para 'security:availability'
+    AllowedValues:
+    - vital
+    - sensible
+    - relevante
+    - normal
+    - estandar
+    - n/a
+    Default: relevante
+   pTagValueCriticity:
+    Type: String
+    Description: Este es el valor de tag para 'security:criticity'
+    AllowedValues:
+    - critico
+    - alto
+    - medio
+    - minimo
+    - insignificante
+    Default: medio
+   pTagValueArchitectureType:
+    Type: String
+    Description: Este es el valor de tag para 'sn:architecture-type'
+    AllowedValues:
+    - sas
+    - cots
+    - home-grown
+    Default: sas
+  #============================================================================#
+  # Resources
+  #============================================================================#    
+Resources:
+  #============================================================================#
+  # Security groups
+  #============================================================================#
+
+  #Bastion SG
+  BastionSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: !Sub '${EKSClusterName}-Bastion-Instance-SG'
+      GroupDescription: SG bastion host EKS
+      VpcId: !Ref VPC
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 443
+          ToPort: 443
+          CidrIp: 0.0.0.0/0
+
+  #Control Plane SG
+  ControlPlaneSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: !Sub '${EKSClusterName}-ControlPlaneSecurityGroup'
+      GroupDescription: Security group for the elastic network interfaces between the control plane and the worker nodes
+      VpcId: !Ref VPC
+      Tags:
+        - Key: Name
+          Value: !Sub "${EKSClusterName}-ControlPlaneSecurityGroup"
+  ControlPlaneIngressFromWorkerNodesHttps:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      Description: Allow incoming HTTPS traffic (TCP/443) from worker nodes (for API server)
+      GroupId: !Ref ControlPlaneSecurityGroup
+      SourceSecurityGroupId: !Ref WorkerNodesSecurityGroup
+      IpProtocol: tcp
+      ToPort: 443
+      FromPort: 443
+  ControlPlaneIngressFromBastionServerHttps:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      Description: Allow incoming HTTPS traffic (TCP/443) from worker nodes (for API server)
+      GroupId: !Ref ControlPlaneSecurityGroup
+      SourceSecurityGroupId: !Ref BastionSecurityGroup
+      IpProtocol: tcp
+      ToPort: 443
+      FromPort: 443    
+  ControlPlaneEgressToWorkerNodesKubelet:
+    Type: AWS::EC2::SecurityGroupEgress
+    Properties:
+      Description: Allow outgoing kubelet traffic (TCP/10250) to worker nodes
+      GroupId: !Ref ControlPlaneSecurityGroup
+      DestinationSecurityGroupId: !Ref WorkerNodesSecurityGroup
+      IpProtocol: tcp
+      FromPort: 10250
+      ToPort: 10250
+  ControlPlaneEgressToWorkerNodesHttps:
+    Type: AWS::EC2::SecurityGroupEgress
+    Properties:
+      Description: Allow outgoing HTTPS traffic (TCP/442) to worker nodes (for pods running extension API servers)
+      GroupId: !Ref ControlPlaneSecurityGroup
+      DestinationSecurityGroupId: !Ref WorkerNodesSecurityGroup
+      IpProtocol: tcp
+      FromPort: 443
+      ToPort: 443
+
+  #Worker Nodes SG
+  WorkerNodesSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: !Sub '${EKSClusterName}-WorkerNodesSecurityGroup'
+      GroupDescription: Security group for all the worker nodes
+      VpcId: !Ref VPC
+      Tags:
+        - Key: Name
+          Value: !Sub "${EKSClusterName}-WorkerNodesSecurityGroup"
+        - Key: !Sub "kubernetes.io/cluster/${ControlPlane}"
+          Value: "owned"
+  WorkerNodesIngressFromWorkerNodes:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      Description: Allow all incoming traffic from other worker nodes
+      GroupId: !Ref WorkerNodesSecurityGroup
+      SourceSecurityGroupId: !Ref WorkerNodesSecurityGroup
+      IpProtocol: "-1"
+  WorkerNodesIngressFromControlPlaneKubelet:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      Description: Allow incoming kubelet traffic (TCP/10250) from control plane 
+      GroupId: !Ref WorkerNodesSecurityGroup
+      SourceSecurityGroupId: !Ref ControlPlaneSecurityGroup
+      IpProtocol: tcp
+      FromPort: 10250
+      ToPort: 10250
+  WorkerNodesIngressFromControlPlaneHttps:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      Description: Allow incoming HTTPS traffic (TCP/443) from control plane (for pods running extension API servers)
+      GroupId: !Ref WorkerNodesSecurityGroup
+      SourceSecurityGroupId: !Ref ControlPlaneSecurityGroup
+      IpProtocol: tcp
+      FromPort: 443
+      ToPort: 443     
+  #============================================================================#
+  # IAM Roles
+  #============================================================================#
+
+
+  # Control plane role
+  ControlPlaneRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub "${EKSClusterName}-ControlPlaneRole"
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+            Effect: Allow
+            Principal:
+              Service:
+                - eks.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns: 
+        - arn:aws:iam::aws:policy/AmazonEKSClusterPolicy
+        - arn:aws:iam::aws:policy/AmazonEKSServicePolicy
+        - arn:aws:iam::aws:policy/AmazonEKSComputePolicy
+        - arn:aws:iam::aws:policy/AmazonEKSBlockStoragePolicy
+        - arn:aws:iam::aws:policy/AmazonEKSLoadBalancingPolicy
+        - arn:aws:iam::aws:policy/AmazonEKSNetworkingPolicy
+        - arn:aws:iam::aws:policy/AmazonEKSVPCResourceController
+
+  WorkerNodesRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          Effect: Allow
+          Principal:
+            Service:
+              - ec2.amazonaws.com
+          Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AmazonEKSWorkerNodePolicy
+        - arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryPowerUser
+        - arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore
+        - arn:aws:iam::aws:policy/AmazonEKS_CNI_Policy
+        - arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy
+
+  # EKS Fargate PodExecution Role
+  EKSFargatePodExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub "${EKSClusterName}-EKSFargatePodExecutionRole-CF"
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+            Effect: Allow
+            Principal:
+              Service:
+                - eks-fargate-pods.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns: 
+        - arn:aws:iam::aws:policy/AmazonEKSFargatePodExecutionRolePolicy
+
+  BastionHostRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub "${EKSClusterName}-BastionHostRole"
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ec2.amazonaws.com
+            Action: sts:AssumeRole
+      Path: /
+      ManagedPolicyArns:
+        # For SSM Session Manager
+        - arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore 
+        # Optional: Allow CloudWatch logging if needed
+        - arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy
+
+  BastionEksDescribePolicy:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: !Sub "${EKSClusterName}-AllowDescribeEksCluster"
+      Roles:
+        - !Ref BastionHostRole
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Action:
+              - eks:DescribeCluster
+              - eks:ListClusters
+              - eks:AccessKubernetesApi
+              - eks:DescribeClusterVersions
+              - eks:TagResource
+              - eks:ListFargateProfiles
+              - eks:CreateFargateProfile
+              - eks:DescribeFargateProfile
+              - eks:TagFargateProfile
+              - ec2:CreateTags
+              - ec2:ListTags
+              - ec2:DescribeTags
+              - iam:GetOpenIDConnectProvider
+              - iam:CreateOpenIDConnectProvider
+              - iam:TagOpenIDConnectProvider
+              - iam:CreatePolicy
+              - iam:GetRole
+              - iam:TagRole
+              - iam:PassRole
+              - iam:AttachRolePolicy
+              - iam:CreateRole
+              - iam:DescribeRole
+              - cloudformation:ListStacks
+              - cloudformation:CreateStack
+              - cloudformation:DescribeStacks
+            Resource: "*"
+            #Resource: !Sub arn:aws:eks:${AWS::Region}:${AWS::AccountId}:cluster/${EKSClusterName}    
+
+  BastionHostInstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      InstanceProfileName: !Sub "${EKSClusterName}-BastionHostInstanceProfile"
+      Roles:
+        - !Ref BastionHostRole
+      Path: / 
+
+
+  #============================================================================#
+  # Control plane
+  #============================================================================#
+
+  ControlPlane:
+    Type: AWS::EKS::Cluster
+    Properties:
+      AccessConfig:
+        AuthenticationMode: "API_AND_CONFIG_MAP"    
+      Name: !Ref EKSClusterName
+      Version: !Ref EKSVersion
+      RoleArn: !GetAtt ControlPlaneRole.Arn
+      ResourcesVpcConfig:
+        SecurityGroupIds:
+          - !Ref ControlPlaneSecurityGroup
+        SubnetIds:
+          - !Ref ComputeSubnet1
+          - !Ref ComputeSubnet2 
+          - !Ref ComputeSubnet3
+        EndpointPublicAccess: false
+        EndpointPrivateAccess: true      
+      Logging:
+        ClusterLogging:
+          EnabledTypes:
+            - Type: api
+            - Type: audit
+
+  # EKS Access Entry for EC2 Role (Granting Access to 'system:nodes' Group)
+  MyEksAccessEntry:
+    DependsOn: ControlPlane
+    Type: 'AWS::EKS::AccessEntry'
+    Properties:
+      ClusterName: !Ref EKSClusterName
+      PrincipalArn: !GetAtt BastionHostRole.Arn
+      Username: bastion-user
+      AccessPolicies:
+        - PolicyArn: "arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy"
+          AccessScope:
+            Type: cluster        
+
+#============================================================================#
+# Worker nodes
+# AWS doc: https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-eks-nodegroup.html
+#============================================================================#
+
+  WorkerNodegroup:
+    Type: AWS::EKS::Nodegroup
+    DependsOn: ControlPlane
+    Properties:
+      UpdateConfig:
+        MaxUnavailable: 1
+      ClusterName: !Ref EKSClusterName
+      AmiType: !Ref WorkersAmiType
+      InstanceTypes: 
+        - !Ref NodeInstanceType
+      CapacityType: ON_DEMAND
+      DiskSize: !Ref DiskSize
+      NodegroupName: !Sub "NodeGroup-${EKSClusterName}"
+      NodeRole: !GetAtt WorkerNodesRole.Arn
+      ScalingConfig:
+        MinSize:
+          Ref: NumWorkerNodes
+        DesiredSize:
+          Ref: NumWorkerNodes
+        MaxSize:
+          Ref: NumWorkerNodes
+      Subnets:
+        - !Ref ComputeSubnet1
+        - !Ref ComputeSubnet2
+        - !Ref ComputeSubnet3        
+
+
+#============================================================================#
+# Control plane Addon's
+#============================================================================#
+
+  VpcCniAddon:
+    Type: AWS::EKS::Addon
+    DependsOn: ControlPlane
+    Properties:
+      AddonName: vpc-cni
+      AddonVersion: v1.19.6-eksbuild.1
+      ClusterName: !Ref EKSClusterName
+      ResolveConflicts: OVERWRITE
+
+  KubeProxyAddon:
+    Type: AWS::EKS::Addon
+    DependsOn: ControlPlane
+    Properties:
+      AddonName: kube-proxy
+      AddonVersion: v1.33.0-eksbuild.2
+      ClusterName: !Ref EKSClusterName
+      ResolveConflicts: OVERWRITE
+
+  CoreDNSAddon:
+    Type: AWS::EKS::Addon
+    DependsOn: ControlPlane
+    Properties:
+      AddonName: coredns
+      AddonVersion: v1.12.1-eksbuild.2
+      ClusterName: !Ref EKSClusterName
+      ResolveConflicts: OVERWRITE
+
+  CSIDriverAddon:
+    Type: AWS::EKS::Addon
+    DependsOn: ControlPlane
+    Properties:
+      AddonName: aws-ebs-csi-driver
+      AddonVersion: v1.45.0-eksbuild.2
+      ClusterName: !Ref EKSClusterName
+      ResolveConflicts: OVERWRITE
+            
+  CloudwatchAddon:
+    Type: AWS::EKS::Addon
+    DependsOn: ControlPlane
+    Properties:
+      AddonName: amazon-cloudwatch-observability
+      AddonVersion: v4.1.0-eksbuild.1
+      ClusterName: !Ref EKSClusterName
+      ResolveConflicts: OVERWRITE
+
+  MetricsServerAddon:
+    Type: AWS::EKS::Addon
+    DependsOn: ControlPlane
+    Properties:
+      AddonName: metrics-server
+      AddonVersion: v0.7.2-eksbuild.4
+      ClusterName: !Ref EKSClusterName
+      ResolveConflicts: OVERWRITE
+
+  CertManagerAddon:
+    Type: AWS::EKS::Addon
+    DependsOn: ControlPlane
+    Properties:
+      AddonName: cert-manager
+      AddonVersion: v1.18.1-eksbuild.1
+      ClusterName: !Ref EKSClusterName
+      ResolveConflicts: OVERWRITE
+
+  PrivateCAAddon:
+    Type: AWS::EKS::Addon
+    DependsOn: ControlPlane
+    Properties:
+      AddonName: aws-privateca-connector-for-kubernetes
+      AddonVersion: v1.6.0-eksbuild.1
+      ClusterName: !Ref EKSClusterName
+      ResolveConflicts: OVERWRITE      
+
+  NodeMonitoringAddon:
+    Type: AWS::EKS::Addon
+    DependsOn: ControlPlane
+    Properties:
+      AddonName: eks-node-monitoring-agent
+      AddonVersion: v1.3.0-eksbuild.2
+      ClusterName: !Ref EKSClusterName
+      ResolveConflicts: OVERWRITE     
+
+  #######################################################################################################
+  #                                           FARGATE PROFILE                                           #
+  #######################################################################################################      
+
+  EKSFargateProfile:
+    DependsOn: ControlPlane
+    Type: 'AWS::EKS::FargateProfile'
+    Properties:
+      FargateProfileName: !Sub "${EKSClusterName}-FargateProfile"
+      ClusterName: !Ref EKSClusterName
+      PodExecutionRoleArn: !GetAtt EKSFargatePodExecutionRole.Arn
+      Subnets:
+        - !Ref ComputeSubnet1
+        - !Ref ComputeSubnet2
+        - !Ref ComputeSubnet3
+      Selectors:
+        - Namespace: fargate
+
+  #######################################################################################################
+  #                                           BASTION SERVER                                            #
+  #######################################################################################################
+
+  BastionServer:
+    Type: AWS::EC2::Instance
+    DependsOn: WorkerNodegroup
+    Properties:
+      SubnetId: !Ref ComputeSubnet1
+      ImageId: !Ref BastionAmiId
+      InstanceType: t3a.large
+      IamInstanceProfile: !Ref BastionHostInstanceProfile
+      PropagateTagsToVolumeOnCreation: 'true'
+      SecurityGroupIds:
+        - !Ref BastionSecurityGroup
+      Tags:
+        - Key: Name
+          Value: !Sub "BastionHost-${EKSClusterName}"
+        - Key: workload:apps
+          Value:
+            Ref: pTagValueApps
+        - Key: workload:tech-owner
+          Value:
+            Ref: pTagValueTechOwner
+        - Key: workload:environment
+          Value:
+            Ref: pTagValueEnvironment
+        - Key: workload:cost-center
+          Value:
+            Ref: pTagValueCostCenter
+        - Key: workload:buss-owner
+          Value:
+            Ref: pTagValueBussOwner
+        - Key: workload:maintenance-window
+          Value:
+            Ref: pTagValueMaintenanceWindow
+        - Key: workload:project
+          Value:
+            Ref: pTagValueProject
+        - Key: automation:aws-backup-daily
+          Value:
+            Ref: pTagValueBackupDaily
+        - Key: automation:aws-backup-weekly
+          Value:
+            Ref: pTagValueBackupWeekly
+        - Key: automation:aws-backup-monthly
+          Value:
+            Ref: pTagValueBackupMonthly
+        - Key: automation:schedule
+          Value:
+            Ref: pTagValueSchedule
+        - Key: security:availability
+          Value:
+            Ref: pTagValueAvailability
+        - Key: security:criticity
+          Value:
+            Ref: pTagValueCriticity
+        - Key: sn:architecture-type
+          Value:
+            Ref: pTagValueArchitectureType                    
+      UserData: 
+        Fn::Base64: 
+          !Sub |
+            #!/bin/bash -xe
+            exec > >(tee /root/eks-user-data.log|logger -t user-data -s 2>/dev/console) 2>&1
+            echo 'Starting Update'
+            sudo yum -y update && sudo yum upgrade
+            sudo yum install unzip 
+            echo 'Installing AWSCLI2'
+            curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+            unzip awscliv2.zip
+            sudo ./aws/install
+            aws --version
+            echo 'Installing kubectl'
+            curl -LO "https://dl.k8s.io/release/$(curl -sL https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+            chmod +x kubectl
+            sudo mv kubectl /usr/local/bin/
+            kubectl version --client
+            aws eks update-kubeconfig --region ${AWS::Region} --name ${EKSClusterName}
+            echo 'Installing eksctl'
+            curl --silent --location "https://github.com/weaveworks/eksctl/releases/latest/download/eksctl_Linux_amd64.tar.gz" -o eksctl.tar.gz
+            tar -xzf eksctl.tar.gz
+            sudo mv eksctl /usr/local/bin
+            eksctl version
+            echo 'Installing helm'
+            curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3
+            chmod +x get_helm.sh
+            ./get_helm.sh
+            helm version
+            ###        Public AWS ALB Ingress Controller     ###            
+            echo 'Deploy AWS ALB Ingress Controller Public'
+            # Create an IAM OIDC provider and associate it with your cluster.
+            eksctl utils associate-iam-oidc-provider --cluster ${EKSClusterName} --region ${AWS::Region}  --approve
+            # Download IAM policy for ALB ingress controller and create. Need for create/delete/edit ALB and manage EC2
+            curl -o iam_policy.json https://raw.githubusercontent.com/kubernetes-sigs/aws-load-balancer-controller/main/docs/install/iam_policy.json
+            # Create IAM role and attach the previous policy and map it to the previous serviceaccount
+            aws iam create-policy \
+            --policy-name AWSLoadBalancerControllerIAMPolicy-${EKSClusterName} \
+            --policy-document file://iam_policy.json
+            echo "IAM policy deployed." 
+            # Create iam service account     
+            eksctl create iamserviceaccount \
+              --cluster=${EKSClusterName} \
+              --namespace=kube-system \
+              --name=aws-load-balancer-controller-${EKSClusterName} \
+              --attach-policy-arn=arn:aws:iam::${AWS::AccountId}:policy/AWSLoadBalancerControllerIAMPolicy-${EKSClusterName} \
+              --approve \
+              --region ${AWS::Region}
+            echo "Service aacount deployed."
+            sudo su root &  cd /root/           
+            echo "Agregando helm charts"
+            helm repo add eks https://aws.github.io/eks-charts
+            sleep 10
+            helm repo update eks
+            sleep 10
+            helm install aws-load-balancer-controller eks/aws-load-balancer-controller -n kube-system --set clusterName=${EKSClusterName} --set serviceAccount.create=false --set serviceAccount.name=aws-load-balancer-controller-${EKSClusterName} --set region=${AWS::Region} --set vpcId=${VPC}
+            echo "Alb ingress controller deployed. "
+            sleep 60
+            echo "Tagueo de subnets publicas para creacion del Ingress Controller publico" 
+            # Subnet IDs (inyectados desde parámetros de CloudFormation)
+            SUBNET1="${PublicSubnet1}"
+            SUBNET2="${PublicSubnet2}"
+            SUBNET3="${PublicSubnet3}"
+            # Etiquetar cada subnet
+            for SUBNET in "$SUBNET1" "$SUBNET2" "$SUBNET3"; do
+              echo "Etiquetando subnet $SUBNET"
+              aws ec2 create-tags \
+                --resources "$SUBNET" \
+                --tags Key="kubernetes.io/cluster/${EKSClusterName}",Value="shared"
+            done
+            sleep 10
+            SUBNET1="${PublicSubnet1}"
+            SUBNET2="${PublicSubnet2}"
+            SUBNET3="${PublicSubnet3}"
+            TAG_KEY="kubernetes.io/role/elb"
+            TAG_VALUE=""
+            # Etiquetar cada subnet si no tiene el tag
+            for SUBNET in "$SUBNET1" "$SUBNET2" "$SUBNET3"; do
+              echo "Revisando tag en subnet $SUBNET"
+              TAG_EXISTS=$(aws ec2 describe-tags \
+                --filters "Name=resource-id,Values=$SUBNET" "Name=key,Values=$TAG_KEY" \
+                --query 'Tags[*].Key' --output text)
+              if [[ -z "$TAG_EXISTS" ]]; then
+                echo "El tag no existe. Etiquetando $SUBNET con $TAG_KEY (valor vacío)..."
+                aws ec2 create-tags \
+                  --resources "$SUBNET" \
+                  --tags Key="$TAG_KEY",Value=""
+              else
+                echo "El tag $TAG_KEY ya existe en $SUBNET, se omite."
+              fi
+            done            
+            echo "Subnets etiquetadas exitosamente."     
+            echo "Applying Kubernetes manifest..."
+            cat <<EOF > /root/nginx-deployment.yaml
+            apiVersion: v1
+            kind: Namespace
+            metadata:
+              name: fargate
+            ---
+            apiVersion: apps/v1
+            kind: Deployment
+            metadata:
+              name: nginx-deployment
+              namespace: fargate
+            spec:
+              replicas: 1
+              selector:
+                matchLabels:
+                  app: nginx
+              template:
+                metadata:
+                  labels:
+                    app: nginx
+                spec:
+                  containers:
+                  - name: nginx
+                    image: nginx:latest
+                    ports:
+                    - containerPort: 80
+                    resources:
+                      requests:
+                        cpu: ".25"
+                        memory: "512Mi"
+            ---
+            apiVersion: v1
+            kind: Service
+            metadata:
+              name: nginx-service
+              namespace: fargate
+            spec:
+              selector:
+                app: nginx
+              ports:
+              - port: 80
+                targetPort: 80
+                protocol: TCP
+              type: ClusterIP
+            EOF
+            kubectl apply -f /root/nginx-deployment.yaml
+            echo "Manifest applied."
+            sleep 60
+            # Crear el recurso Ingress
+            cat <<EOF > /root/nginx-ingress.yaml
+            apiVersion: networking.k8s.io/v1
+            kind: Ingress
+            metadata:
+              name: public-ingress-controller
+              namespace: fargate
+              annotations:
+                alb.ingress.kubernetes.io/scheme: internet-facing
+                alb.ingress.kubernetes.io/group.name: public-alb
+                alb.ingress.kubernetes.io/listen-ports: '[{"HTTPS":443}]'
+                alb.ingress.kubernetes.io/tags: "Name=aws-alb-eks,workload:apps=eks,workload:cost-center=100"
+                alb.ingress.kubernetes.io/certificate-arn: ${PublicCertificateARN}
+                alb.ingress.kubernetes.io/ssl-redirect: '443'
+                alb.ingress.kubernetes.io/target-type: ip
+            spec:
+              ingressClassName: alb
+              rules:
+              - host: nginx.${PublicDomain}
+                http:
+                  paths:
+                  - path: /
+                    pathType: Prefix
+                    backend:
+                      service:
+                        name: nginx-service
+                        port:
+                          number: 80
+            EOF
+            kubectl apply -f /root/nginx-ingress.yaml
+            echo "Ingress deployed."
+            sleep 60
+            # Crear archivo con manifiesto de HPA
+            cat <<EOF > /root/nginx-hpa.yaml
+            apiVersion: autoscaling/v2
+            kind: HorizontalPodAutoscaler
+            metadata:
+              name: nginx-hpa
+              namespace: fargate
+            spec:
+              scaleTargetRef:
+                apiVersion: apps/v1
+                kind: Deployment
+                name: nginx-deployment
+              minReplicas: 1
+              maxReplicas: 5
+              metrics:
+              - type: Resource
+                resource:
+                  name: cpu
+                  target:
+                    type: Utilization
+                    averageUtilization: 15
+              - type: Resource
+                resource:
+                  name: memory
+                  target:
+                    type: Utilization
+                    averageUtilization: 15
+            EOF
+            kubectl apply -f /root/nginx-hpa.yaml
+            echo "HPA Nginx deployed."
+            ###        Private AWS ALB Ingress Controller     ###
+            echo 'Deploy AWS ALB Ingress Controller Private'
+            echo "Tagueo de subnets internas para creacion del Ingress Controller privado" 
+            # Subnet IDs (inyectados desde parámetros de CloudFormation)
+            SUBNET1="${InternalSubnet1}"
+            SUBNET2="${InternalSubnet2}"
+            SUBNET3="${InternalSubnet3}"
+            # Etiquetar cada subnet
+            for SUBNET in "$SUBNET1" "$SUBNET2" "$SUBNET3"; do
+              echo "Etiquetando subnet $SUBNET"
+              aws ec2 create-tags \
+                --resources "$SUBNET" \
+                --tags Key="kubernetes.io/cluster/${EKSClusterName}",Value="shared"
+            done
+            sleep 10
+            SUBNET1="${InternalSubnet1}"
+            SUBNET2="${InternalSubnet2}"
+            SUBNET3="${InternalSubnet3}"
+            TAG_KEY="kubernetes.io/role/internal-elb"
+            TAG_VALUE=""
+            # Etiquetar cada subnet si no tiene el tag
+            for SUBNET in "$SUBNET1" "$SUBNET2" "$SUBNET3"; do
+              echo "Revisando tag en subnet $SUBNET"
+              TAG_EXISTS=$(aws ec2 describe-tags \
+                --filters "Name=resource-id,Values=$SUBNET" "Name=key,Values=$TAG_KEY" \
+                --query 'Tags[*].Key' --output text)
+              if [[ -z "$TAG_EXISTS" ]]; then
+                echo "El tag no existe. Etiquetando $SUBNET con $TAG_KEY (valor vacío)..."
+                aws ec2 create-tags \
+                  --resources "$SUBNET" \
+                  --tags Key="$TAG_KEY",Value=""
+              else
+                echo "El tag $TAG_KEY ya existe en $SUBNET, se omite."
+              fi
+            done            
+            echo "Subnets etiquetadas exitosamente."
+            cat <<EOF > /root/apache-deployment.yaml
+            apiVersion: v1
+            kind: Namespace
+            metadata:
+              name: fargate
+            ---
+            apiVersion: apps/v1
+            kind: Deployment
+            metadata:
+              name: apache-deployment
+              namespace: fargate
+            spec:
+              replicas: 1
+              selector:
+                matchLabels:
+                  app: apache
+              template:
+                metadata:
+                  labels:
+                    app: apache
+                spec:
+                  containers:
+                  - name: apache
+                    image: httpd:latest
+                    ports:
+                    - containerPort: 80
+                    resources:
+                      requests:
+                        cpu: "0.25"
+                        memory: "512Mi"
+            ---
+            apiVersion: v1
+            kind: Service
+            metadata:
+              name: apache-service
+              namespace: fargate
+            spec:
+              selector:
+                app: apache
+              ports:
+              - port: 80
+                targetPort: 80
+                protocol: TCP
+              type: ClusterIP
+            EOF
+            kubectl apply -f /root/apache-deployment.yaml
+            echo "Apache deployment applied."
+            sleep 60                   
+            # Crear el recurso Ingress
+            cat <<EOF > /root/apache-ingress.yaml
+            apiVersion: networking.k8s.io/v1
+            kind: Ingress
+            metadata:
+              name: private-ingress-controller
+              namespace: fargate
+              annotations:
+                alb.ingress.kubernetes.io/scheme: internal
+                alb.ingress.kubernetes.io/group.name: internal-alb
+                alb.ingress.kubernetes.io/listen-ports: '[{"HTTPS":443}]'
+                alb.ingress.kubernetes.io/tags: "Name=aws-alb-eks,workload:apps=eks,workload:cost-center=100"
+                alb.ingress.kubernetes.io/certificate-arn: ${PrivateCertificateARN}
+                alb.ingress.kubernetes.io/ssl-redirect: '443'
+                alb.ingress.kubernetes.io/target-type: ip
+            spec:
+              ingressClassName: alb
+              rules:
+              - host: apache.${PrivateDomain}
+                http:
+                  paths:
+                  - path: /
+                    pathType: Prefix
+                    backend:
+                      service:
+                        name: apache-service
+                        port:
+                          number: 80
+            EOF
+            kubectl apply -f /root/apache-ingress.yaml
+            echo "Ingress deployed."
+            sleep 60            
+            # Crear archivo con manifiesto de HPA para Apache
+            cat <<EOF > /root/apache-hpa.yaml
+            apiVersion: autoscaling/v2
+            kind: HorizontalPodAutoscaler
+            metadata:
+              name: apache-hpa
+              namespace: fargate
+            spec:
+              scaleTargetRef:
+                apiVersion: apps/v1
+                kind: Deployment
+                name: apache-deployment
+              minReplicas: 1
+              maxReplicas: 5
+              metrics:
+              - type: Resource
+                resource:
+                  name: cpu
+                  target:
+                    type: Utilization
+                    averageUtilization: 15
+              - type: Resource
+                resource:
+                  name: memory
+                  target:
+                    type: Utilization
+                    averageUtilization: 15
+            EOF
+            kubectl apply -f /root/apache-hpa.yaml
+            echo "Apache HPA deployed."
