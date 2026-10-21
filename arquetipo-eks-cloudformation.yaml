@@ -9,67 +9,57 @@ Parameters:
     #Type: 'AWS::EC2::VPC::Id'
     Type: String
     Description: 'Escoger VPC a utilizar por el cluster de EKS'
-    Default: vpc-0123456789abcdef0
    PublicSubnet1:
     #Type: 'AWS::EC2::Subnet::Id'
     Type: String
     Description: 'Seleccionar Public AZ-A'
-    Default: subnet-0123456789abcdef0
    PublicSubnet2:
     #Type: 'AWS::EC2::Subnet::Id'
     Type: String
     Description: 'Seleccionar Public AZ-B'
-    Default: subnet-0123456789abcdef0
    PublicSubnet3:
     #Type: 'AWS::EC2::Subnet::Id'
     Type: String
     Description: 'Seleccionar Public AZ-C'
-    Default: subnet-0123456789abcdef0   
    ComputeSubnet1:
     #Type: 'AWS::EC2::Subnet::Id'
     Type: String
     Description: 'Seleccionar ComputeSubnet1/PrivateSubnet AZ-A'
-    Default: subnet-0123456789abcdef0
    ComputeSubnet2:
     #Type: 'AWS::EC2::Subnet::Id'
     Type: String
     Description: 'Seleccionar ComputeSubnet2/PrivateSubnet AZ-B'
-    Default: subnet-0123456789abcdef0
    ComputeSubnet3:
     #Type: 'AWS::EC2::Subnet::Id'
     Type: String
     Description: 'Seleccionar ComputeSubnet3/PrivateSubnet AZ-C'
-    Default: subnet-0123456789abcdef0
    InternalSubnet1:
     #Type: 'AWS::EC2::Subnet::Id'
     Type: String
     Description: 'Seleccionar InternalSubnet1 AZ-A'
-    Default: subnet-0123456789abcdef0
    InternalSubnet2:
     #Type: 'AWS::EC2::Subnet::Id'
     Type: String
     Description: 'Seleccionar InternalSubnet2 AZ-B'
-    Default: subnet-0123456789abcdef0
    InternalSubnet3:
     #Type: 'AWS::EC2::Subnet::Id'
     Type: String
     Description: 'Seleccionar InternalSubnet3 AZ-C'
-    Default: subnet-0123456789abcdef0
    PublicDomain:
     Type: String
-    Default: infra-sbx.example.ar
+    Default: example.com
     Description: AWS Public Domain       
    PublicCertificateARN:
     Type: String
-    Default: arn:aws:acm:us-east-1:<AWS_ACCOUNT_ID>:certificate/36157dc4-2b34-4083-91ff-2f5fb4008e11
+    Default: arn:aws:acm:us-east-1:<AWS_ACCOUNT_ID>:certificate/<CERTIFICATE_ID>
     Description: AWS ACM Public Certificate
    PrivateDomain:
     Type: String
-    Default: infra-sbx.example.aws
+    Default: example.internal
     Description: AWS Private Domain      
    PrivateCertificateARN:
     Type: String
-    Default: arn:aws:acm:us-east-1:<AWS_ACCOUNT_ID>:certificate/10fe5f74-cc8a-4a2f-9e5e-1b75b760b6ae
+    Default: arn:aws:acm:us-east-1:<AWS_ACCOUNT_ID>:certificate/<CERTIFICATE_ID>
     Description: AWS ACM Prvate Certificate       
    EKSClusterName:
     Type: String
