@@ -61,7 +61,7 @@ Parameters:
     Description: AWS Public Domain       
    PublicCertificateARN:
     Type: String
-    Default: arn:aws:acm:us-east-1:<AWS_ACCOUNT_ID>:certificate/36157dc4-2b34-4083-91ff-2f5fb4008e11
+    Default: arn:aws:acm:us-east-1:<AWS_ACCOUNT_ID>:certificate/<CERTIFICATE_ID>
     Description: AWS ACM Public Certificate
    PrivateDomain:
     Type: String
@@ -69,7 +69,7 @@ Parameters:
     Description: AWS Private Domain      
    PrivateCertificateARN:
     Type: String
-    Default: arn:aws:acm:us-east-1:<AWS_ACCOUNT_ID>:certificate/10fe5f74-cc8a-4a2f-9e5e-1b75b760b6ae
+    Default: arn:aws:acm:us-east-1:<AWS_ACCOUNT_ID>:certificate/<CERTIFICATE_ID>
     Description: AWS ACM Prvate Certificate       
    EKSClusterName:
     Type: String
